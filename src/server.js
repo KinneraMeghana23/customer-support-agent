@@ -15,26 +15,23 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔐 Session
+// 🔐 SESSION
 app.use(session({
-  secret: "secret-key",
+  secret: "simple-secret",
   resave: false,
   saveUninitialized: true
 }));
 
-// 🌿 Static files
+// 🌿 STATIC
 app.use(express.static(path.join(__dirname, "public")));
 
 const upload = multer({ dest: "src/uploads/" });
 
 
-// 🔐 AUTH MIDDLEWARE
+// 🔐 AUTH CHECK
 function isAuthenticated(req, res, next) {
-  if (req.session.user) {
-    next();
-  } else {
-    res.redirect("/login");
-  }
+  if (req.session.user) return next();
+  res.redirect("/login");
 }
 
 
@@ -49,10 +46,10 @@ app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
   if (username === "admin" && password === "1234") {
-    req.session.user = username;
+    req.session.user = true;
     res.redirect("/");
   } else {
-    res.send("❌ Invalid credentials");
+    res.send("❌ Wrong username or password");
   }
 });
 
@@ -64,7 +61,7 @@ app.get("/logout", (req, res) => {
 });
 
 
-// 🌿 DASHBOARD (PROTECTED)
+// 🌿 PROTECTED DASHBOARD
 app.get("/", isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -99,7 +96,7 @@ app.post("/send-bulk", upload.fields([
 });
 
 
-// ⏳ SCHEDULE EMAIL
+// ⏳ SCHEDULE
 app.post("/schedule", upload.fields([
   { name: "file" },
   { name: "attachment" }
@@ -121,7 +118,6 @@ app.post("/schedule", upload.fields([
       for (let email of emails) {
         await sendEmail(email, subject, finalMessage, attachment);
       }
-      console.log("⏳ Scheduled emails sent");
     }, delay);
 
     res.send("⏳ Scheduled successfully");
