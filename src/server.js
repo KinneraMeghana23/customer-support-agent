@@ -17,18 +17,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // 🔐 SESSION
 app.use(session({
-  secret: "simple-secret",
+  secret: "secure-key",
   resave: false,
   saveUninitialized: true
 }));
 
-// ⚠️ FIXED STATIC (important)
+// ⚠️ STATIC FIX
 app.use("/static", express.static(path.join(__dirname, "public")));
 
 const upload = multer({ dest: "src/uploads/" });
 
 
-// 🔐 AUTH CHECK
+// 🔐 AUTH
 function isAuthenticated(req, res, next) {
   if (req.session.user) return next();
   res.redirect("/login");
@@ -41,11 +41,14 @@ app.get("/login", (req, res) => {
 });
 
 
-// 🌿 LOGIN LOGIC
+// 🌿 LOGIN LOGIC (ENV BASED)
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  if (username === "admin" && password === "1234") {
+  if (
+    username === process.env.LOGIN_USER &&
+    password === process.env.LOGIN_PASS
+  ) {
     req.session.user = true;
     res.redirect("/");
   } else {
@@ -61,13 +64,13 @@ app.get("/logout", (req, res) => {
 });
 
 
-// 🌿 DASHBOARD (PROTECTED)
+// 🌿 DASHBOARD
 app.get("/", isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 
-// 📧 SEND EMAIL
+// 📧 SEND
 app.post("/send-bulk", upload.fields([
   { name: "file" },
   { name: "attachment" }
@@ -96,7 +99,7 @@ app.post("/send-bulk", upload.fields([
 });
 
 
-// ⏳ SCHEDULE EMAIL
+// ⏳ SCHEDULE
 app.post("/schedule", upload.fields([
   { name: "file" },
   { name: "attachment" }
@@ -127,7 +130,6 @@ app.post("/schedule", upload.fields([
     res.status(500).send("❌ Scheduling failed");
   }
 });
-
 
 const PORT = process.env.PORT || 3000;
 
