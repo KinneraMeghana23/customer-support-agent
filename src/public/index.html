@@ -1,58 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bulk Email Dashboard</title>
+  <title>Admin Dashboard</title>
 
   <style>
     body {
+      margin: 0;
       font-family: Arial;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
-      color: white;
+      display: flex;
+      height: 100vh;
     }
 
-    .container {
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #1e293b;
+      color: white;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+    }
+
+    .menu {
+      margin-top: 30px;
+    }
+
+    .menu div {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .menu div:hover, .active {
+      background: #3b82f6;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      background: #f1f5f9;
+      padding: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
       max-width: 600px;
-      margin: 40px auto;
-      padding: 25px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 15px;
+      margin: auto;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
 
     input, select, textarea {
       width: 100%;
       margin: 10px 0;
       padding: 10px;
-      border-radius: 8px;
-      border: none;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     button {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(to right, #00c6ff, #0072ff);
+      background: #3b82f6;
       color: white;
-      font-size: 16px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    .tabs {
-      display: flex;
-      margin-bottom: 15px;
-    }
-
-    .tab {
-      flex: 1;
-      padding: 10px;
-      text-align: center;
-      background: rgba(255,255,255,0.2);
-      cursor: pointer;
-    }
-
-    .active {
-      background: #00c6ff;
+    button:hover {
+      background: #2563eb;
     }
 
     .hidden {
@@ -63,77 +83,80 @@
 
 <body>
 
-<div class="container">
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>📧 Admin</h2>
 
-  <h2>📧 Bulk Email System</h2>
+  <div class="menu">
+    <div class="active" onclick="show('send', this)">Send Email</div>
+    <div onclick="show('schedule', this)">Schedule</div>
+  </div>
+</div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('send')">Send Now</div>
-    <div class="tab" onclick="showTab('schedule')">Schedule</div>
+<!-- Main -->
+<div class="main">
+
+  <!-- SEND -->
+  <div id="send" class="card">
+    <h3>Send Bulk Email</h3>
+
+    <form action="/send-bulk" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" required>
+
+      <input type="text" name="subject" placeholder="Subject">
+
+      <select name="type">
+        <option value="announcement">Announcement</option>
+        <option value="meeting">Meeting</option>
+        <option value="holiday">Holiday</option>
+      </select>
+
+      <textarea name="message" placeholder="Message"></textarea>
+
+      <label>Attachment</label>
+      <input type="file" name="attachment">
+
+      <button>Send Emails</button>
+    </form>
   </div>
 
-  <!-- SEND FORM -->
-  <form id="send" action="/send-bulk" method="post" enctype="multipart/form-data">
+  <!-- SCHEDULE -->
+  <div id="schedule" class="card hidden">
+    <h3>Schedule Emails</h3>
 
-    <input type="file" name="file" required>
+    <form action="/schedule" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" required>
 
-    <input type="text" name="subject" placeholder="Subject">
+      <input type="text" name="subject" placeholder="Subject">
 
-    <select name="type">
-      <option value="announcement">📢 Announcement</option>
-      <option value="meeting">📅 Meeting</option>
-      <option value="holiday">🎉 Holiday</option>
-    </select>
+      <select name="type">
+        <option value="announcement">Announcement</option>
+        <option value="meeting">Meeting</option>
+        <option value="holiday">Holiday</option>
+      </select>
 
-    <textarea name="message" placeholder="Message"></textarea>
+      <textarea name="message" placeholder="Message"></textarea>
 
-    <!-- 📎 ATTACHMENT -->
-    <label>Attach File (PDF/Image/Word)</label>
-    <input type="file" name="attachment">
+      <input type="file" name="attachment">
 
-    <button type="submit">🚀 Send Emails</button>
-  </form>
+      <label>Schedule Time</label>
+      <input type="datetime-local" name="time">
 
-
-  <!-- SCHEDULE FORM -->
-  <form id="schedule" class="hidden" action="/schedule" method="post" enctype="multipart/form-data">
-
-    <input type="file" name="file" required>
-
-    <input type="text" name="subject" placeholder="Subject">
-
-    <select name="type">
-      <option value="announcement">📢 Announcement</option>
-      <option value="meeting">📅 Meeting</option>
-      <option value="holiday">🎉 Holiday</option>
-    </select>
-
-    <textarea name="message" placeholder="Message"></textarea>
-
-    <!-- 📎 ATTACHMENT -->
-    <input type="file" name="attachment">
-
-    <!-- ⏳ SCHEDULING -->
-    <label>Schedule Time</label>
-    <input type="datetime-local" name="time">
-
-    <button type="submit">⏳ Schedule Emails</button>
-  </form>
+      <button>Schedule Emails</button>
+    </form>
+  </div>
 
 </div>
 
 <script>
-function showTab(tab) {
+function show(id, el) {
   document.getElementById("send").classList.add("hidden");
   document.getElementById("schedule").classList.add("hidden");
 
-  document.getElementById(tab).classList.remove("hidden");
+  document.getElementById(id).classList.remove("hidden");
 
-  let tabs = document.querySelectorAll(".tab");
-  tabs.forEach(t => t.classList.remove("active"));
-
-  event.target.classList.add("active");
+  document.querySelectorAll(".menu div").forEach(e => e.classList.remove("active"));
+  el.classList.add("active");
 }
 </script>
 
