@@ -1,25 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bulk Email System</title>
+  <title>Bulk Email Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 60px auto;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    textarea {
+      height: 100px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #00c6ff;
+      background: linear-gradient(to right, #0072ff, #00c6ff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    label {
+      font-size: 14px;
+    }
+  </style>
 </head>
+
 <body>
-  <h2>Send Bulk Email</h2>
 
-  <form action="http://localhost:3000/send-bulk" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" required /><br><br>
+  <div class="container">
+    <h1>📧 Bulk Email System</h1>
 
-    <input type="text" name="subject" placeholder="Subject" /><br><br>
+    <form action="/send-bulk" method="post" enctype="multipart/form-data">
 
-    <select name="type">
-      <option value="announcement">Announcement</option>
-      <option value="meeting">Meeting</option>
-      <option value="holiday">Holiday</option>
-    </select><br><br>
+      <div class="section">
+        <label>Upload Excel File</label>
+        <input type="file" name="file" required>
+      </div>
 
-    <textarea name="message" placeholder="Message"></textarea><br><br>
+      <div class="section">
+        <label>Subject</label>
+        <input type="text" name="subject" placeholder="Enter subject">
+      </div>
 
-    <button type="submit">Send</button>
-  </form>
+      <div class="section">
+        <label>Message Type</label>
+        <select name="type">
+          <option value="announcement">📢 Announcement</option>
+          <option value="meeting">📅 Meeting</option>
+          <option value="holiday">🎉 Holiday</option>
+        </select>
+      </div>
+
+      <div class="section">
+        <label>Message</label>
+        <textarea name="message" placeholder="Write your message..."></textarea>
+      </div>
+
+      <button type="submit">🚀 Send Emails</button>
+
+    </form>
+
+  </div>
+
 </body>
 </html>
