@@ -1,8 +1,84 @@
-// SEND
-app.post("/send-bulk", upload.fields([
-  { name: "file" },
-  { name: "attachment" }
-]), async (req, res) => {
+const express = require("express");
+const dotenv = require("dotenv");
+const multer = require("multer");
+const path = require("path");
+const session = require("express-session");
+const bcrypt = require("bcryptjs");
+
+require("./database/db");
+
+const User = require("./database/User");
+const EmailLog = require("./database/EmailLog");
+
+const { extractEmails } = require("./ingestion/fileHandler");
+const { sendEmail } = require("./services/messageGenerator");
+const { formatMessage } = require("./decision/decisionEngine");
+
+dotenv.config();
+
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(session({
+  secret: "secret-key",
+  resave: false,
+  saveUninitialized: true
+}));
+
+app.use(express.static(path.join(__dirname, "public")));
+
+const upload = multer({ dest: "src/uploads/" });
+
+function isAuthenticated(req, res, next) {
+  if (req.session.user) return next();
+  res.redirect("/login");
+}
+
+/* LOGIN */
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) return res.send("User not found");
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.send("Wrong password");
+
+  req.session.user = user;
+  res.redirect("/");
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy();
+  res.redirect("/login");
+});
+
+/* CREATE ADMIN (run once) */
+app.get("/register", async (req, res) => {
+  const hashed = await bcrypt.hash("1234", 10);
+
+  await User.create({
+    username: "admin",
+    password: hashed,
+    role: "admin"
+  });
+
+  res.send("Admin created");
+});
+
+/* DASHBOARD */
+app.get("/", isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+/* SEND EMAIL */
+app.post("/send-bulk", upload.fields([{ name: "file" }, { name: "attachment" }]), async (req, res) => {
 
   const emails = extractEmails(req.files.file[0].path);
 
@@ -17,15 +93,18 @@ app.post("/send-bulk", upload.fields([
     await sendEmail(email, subject, finalMessage, attachment);
   }
 
+  await EmailLog.create({
+    subject,
+    message,
+    type,
+    count: emails.length
+  });
+
   res.send("Emails sent successfully");
 });
 
-
-// SCHEDULE
-app.post("/schedule", upload.fields([
-  { name: "file" },
-  { name: "attachment" }
-]), (req, res) => {
+/* SCHEDULE */
+app.post("/schedule", upload.fields([{ name: "file" }, { name: "attachment" }]), (req, res) => {
 
   const emails = extractEmails(req.files.file[0].path);
 
@@ -42,8 +121,31 @@ app.post("/schedule", upload.fields([
     for (let email of emails) {
       await sendEmail(email, subject, finalMessage, attachment);
     }
-    console.log("Scheduled emails sent");
   }, delay);
 
   res.send("Scheduled successfully");
+});
+
+/* HISTORY */
+app.get("/history", isAuthenticated, async (req, res) => {
+  const logs = await EmailLog.find().sort({ date: -1 });
+  res.json(logs);
+});
+
+/* ANALYTICS */
+app.get("/analytics", isAuthenticated, async (req, res) => {
+  const logs = await EmailLog.find();
+
+  const totalEmails = logs.reduce((sum, l) => sum + l.count, 0);
+
+  res.json({
+    totalCampaigns: logs.length,
+    totalEmails
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });

@@ -5,7 +5,7 @@ function extractEmails(filePath) {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = xlsx.utils.sheet_to_json(sheet);
 
-  return data.map(row => row.email);
+  return data.map(row => row.email || Object.values(row)[0]);
 }
 
 module.exports = { extractEmails };
