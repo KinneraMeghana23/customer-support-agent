@@ -5,104 +5,137 @@
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: linear-gradient(135deg, #1e3c72, #2a5298);
       color: white;
-      margin: 0;
-      padding: 0;
     }
 
     .container {
       max-width: 600px;
-      margin: 60px auto;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 30px;
+      margin: 40px auto;
+      padding: 25px;
+      background: rgba(255,255,255,0.1);
       border-radius: 15px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
     }
 
     input, select, textarea {
       width: 100%;
-      padding: 10px;
       margin: 10px 0;
+      padding: 10px;
       border-radius: 8px;
       border: none;
-      outline: none;
-    }
-
-    textarea {
-      height: 100px;
     }
 
     button {
       width: 100%;
       padding: 12px;
-      background: #00c6ff;
-      background: linear-gradient(to right, #0072ff, #00c6ff);
+      margin-top: 10px;
       border: none;
       border-radius: 8px;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
       color: white;
       font-size: 16px;
       cursor: pointer;
-      transition: 0.3s;
     }
 
-    button:hover {
-      transform: scale(1.05);
+    .tabs {
+      display: flex;
+      margin-bottom: 15px;
     }
 
-    .section {
-      margin-top: 20px;
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: rgba(255,255,255,0.2);
+      cursor: pointer;
     }
 
-    label {
-      font-size: 14px;
+    .active {
+      background: #00c6ff;
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
-    <h1>📧 Bulk Email System</h1>
+<div class="container">
 
-    <form action="/send-bulk" method="post" enctype="multipart/form-data">
+  <h2>📧 Bulk Email System</h2>
 
-      <div class="section">
-        <label>Upload Excel File</label>
-        <input type="file" name="file" required>
-      </div>
-
-      <div class="section">
-        <label>Subject</label>
-        <input type="text" name="subject" placeholder="Enter subject">
-      </div>
-
-      <div class="section">
-        <label>Message Type</label>
-        <select name="type">
-          <option value="announcement">📢 Announcement</option>
-          <option value="meeting">📅 Meeting</option>
-          <option value="holiday">🎉 Holiday</option>
-        </select>
-      </div>
-
-      <div class="section">
-        <label>Message</label>
-        <textarea name="message" placeholder="Write your message..."></textarea>
-      </div>
-
-      <button type="submit">🚀 Send Emails</button>
-
-    </form>
-
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('send')">Send Now</div>
+    <div class="tab" onclick="showTab('schedule')">Schedule</div>
   </div>
+
+  <!-- SEND FORM -->
+  <form id="send" action="/send-bulk" method="post" enctype="multipart/form-data">
+
+    <input type="file" name="file" required>
+
+    <input type="text" name="subject" placeholder="Subject">
+
+    <select name="type">
+      <option value="announcement">📢 Announcement</option>
+      <option value="meeting">📅 Meeting</option>
+      <option value="holiday">🎉 Holiday</option>
+    </select>
+
+    <textarea name="message" placeholder="Message"></textarea>
+
+    <!-- 📎 ATTACHMENT -->
+    <label>Attach File (PDF/Image/Word)</label>
+    <input type="file" name="attachment">
+
+    <button type="submit">🚀 Send Emails</button>
+  </form>
+
+
+  <!-- SCHEDULE FORM -->
+  <form id="schedule" class="hidden" action="/schedule" method="post" enctype="multipart/form-data">
+
+    <input type="file" name="file" required>
+
+    <input type="text" name="subject" placeholder="Subject">
+
+    <select name="type">
+      <option value="announcement">📢 Announcement</option>
+      <option value="meeting">📅 Meeting</option>
+      <option value="holiday">🎉 Holiday</option>
+    </select>
+
+    <textarea name="message" placeholder="Message"></textarea>
+
+    <!-- 📎 ATTACHMENT -->
+    <input type="file" name="attachment">
+
+    <!-- ⏳ SCHEDULING -->
+    <label>Schedule Time</label>
+    <input type="datetime-local" name="time">
+
+    <button type="submit">⏳ Schedule Emails</button>
+  </form>
+
+</div>
+
+<script>
+function showTab(tab) {
+  document.getElementById("send").classList.add("hidden");
+  document.getElementById("schedule").classList.add("hidden");
+
+  document.getElementById(tab).classList.remove("hidden");
+
+  let tabs = document.querySelectorAll(".tab");
+  tabs.forEach(t => t.classList.remove("active"));
+
+  event.target.classList.add("active");
+}
+</script>
 
 </body>
 </html>
