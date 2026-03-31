@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const multer = require("multer");
+const path = require("path");
 
 const { extractEmails } = require("./ingestion/fileHandler");
 const { sendEmail } = require("./services/messageGenerator");
@@ -13,10 +14,14 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 🌿 Serve frontend (IMPORTANT)
+app.use(express.static(path.join(__dirname, "public")));
+
 const upload = multer({ dest: "src/uploads/" });
 
+// 🌿 Show dashboard instead of plain text
 app.get("/", (req, res) => {
-  res.send("🌿 Bulk Email System Running");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 
