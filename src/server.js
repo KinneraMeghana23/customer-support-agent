@@ -4,7 +4,6 @@ const multer = require("multer");
 const path = require("path");
 const session = require("express-session");
 
-
 const { extractEmails } = require("./ingestion/fileHandler");
 const { sendEmail } = require("./services/messageGenerator");
 const { formatMessage } = require("./decision/decisionEngine");
@@ -16,26 +15,36 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 🔐 Session
 app.use(session({
   secret: "secret-key",
   resave: false,
   saveUninitialized: true
 }));
 
+// 🌿 Static files
 app.use(express.static(path.join(__dirname, "public")));
 
 const upload = multer({ dest: "src/uploads/" });
 
+
+// 🔐 AUTH MIDDLEWARE
 function isAuthenticated(req, res, next) {
-  if (req.session.user) return next();
-  res.redirect("/login");
+  if (req.session.user) {
+    next();
+  } else {
+    res.redirect("/login");
+  }
 }
 
-/* LOGIN */
+
+// 🌿 LOGIN PAGE
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
+
+// 🌿 LOGIN LOGIC (simple)
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
@@ -43,102 +52,89 @@ app.post("/login", (req, res) => {
     req.session.user = username;
     res.redirect("/");
   } else {
-    res.send("Invalid credentials");
+    res.send("❌ Invalid credentials");
   }
 });
 
+
+// 🌿 LOGOUT
 app.get("/logout", (req, res) => {
   req.session.destroy();
   res.redirect("/login");
 });
 
-/* CREATE ADMIN (run once) */
-app.get("/register", async (req, res) => {
-  const hashed = await bcrypt.hash("1234", 10);
 
-  await User.create({
-    username: "admin",
-    password: hashed,
-    role: "admin"
-  });
-
-  res.send("Admin created");
-});
-
-/* DASHBOARD */
+// 🌿 DASHBOARD (PROTECTED)
 app.get("/", isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-/* SEND EMAIL */
-app.post("/send-bulk", upload.fields([{ name: "file" }, { name: "attachment" }]), async (req, res) => {
 
-  const emails = extractEmails(req.files.file[0].path);
+// 📧 SEND EMAIL
+app.post("/send-bulk", upload.fields([
+  { name: "file" },
+  { name: "attachment" }
+]), async (req, res) => {
 
-  const { subject, message, type } = req.body;
-  const finalMessage = formatMessage(type, message);
+  try {
+    const emails = extractEmails(req.files.file[0].path);
 
-  const attachment = req.files.attachment
-    ? [{ path: req.files.attachment[0].path }]
-    : [];
+    const { subject, message, type } = req.body;
+    const finalMessage = formatMessage(type, message);
 
-  for (let email of emails) {
-    await sendEmail(email, subject, finalMessage, attachment);
-  }
+    const attachment = req.files.attachment
+      ? [{ path: req.files.attachment[0].path }]
+      : [];
 
-  await EmailLog.create({
-    subject,
-    message,
-    type,
-    count: emails.length
-  });
-
-  res.send("Emails sent successfully");
-});
-
-/* SCHEDULE */
-app.post("/schedule", upload.fields([{ name: "file" }, { name: "attachment" }]), (req, res) => {
-
-  const emails = extractEmails(req.files.file[0].path);
-
-  const { subject, message, type, time } = req.body;
-  const finalMessage = formatMessage(type, message);
-
-  const attachment = req.files.attachment
-    ? [{ path: req.files.attachment[0].path }]
-    : [];
-
-  const delay = new Date(time).getTime() - Date.now();
-
-  setTimeout(async () => {
     for (let email of emails) {
       await sendEmail(email, subject, finalMessage, attachment);
     }
-  }, delay);
 
-  res.send("Scheduled successfully");
+    res.send("✅ Emails sent successfully");
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Error sending emails");
+  }
 });
 
-/* HISTORY */
-app.get("/history", isAuthenticated, async (req, res) => {
-  const logs = await EmailLog.find().sort({ date: -1 });
-  res.json(logs);
+
+// ⏳ SCHEDULE EMAIL
+app.post("/schedule", upload.fields([
+  { name: "file" },
+  { name: "attachment" }
+]), (req, res) => {
+
+  try {
+    const emails = extractEmails(req.files.file[0].path);
+
+    const { subject, message, type, time } = req.body;
+    const finalMessage = formatMessage(type, message);
+
+    const attachment = req.files.attachment
+      ? [{ path: req.files.attachment[0].path }]
+      : [];
+
+    const delay = new Date(time).getTime() - Date.now();
+
+    setTimeout(async () => {
+      for (let email of emails) {
+        await sendEmail(email, subject, finalMessage, attachment);
+      }
+      console.log("⏳ Scheduled emails sent");
+    }, delay);
+
+    res.send("⏳ Scheduled successfully");
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Scheduling failed");
+  }
 });
 
-/* ANALYTICS */
-app.get("/analytics", isAuthenticated, async (req, res) => {
-  const logs = await EmailLog.find();
-
-  const totalEmails = logs.reduce((sum, l) => sum + l.count, 0);
-
-  res.json({
-    totalCampaigns: logs.length,
-    totalEmails
-  });
-});
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
