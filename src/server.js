@@ -3,12 +3,7 @@ const dotenv = require("dotenv");
 const multer = require("multer");
 const path = require("path");
 const session = require("express-session");
-const bcrypt = require("bcryptjs");
 
-require("./database/db");
-
-const User = require("./database/User");
-const EmailLog = require("./database/EmailLog");
 
 const { extractEmails } = require("./ingestion/fileHandler");
 const { sendEmail } = require("./services/messageGenerator");
@@ -41,17 +36,15 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const user = await User.findOne({ username });
-  if (!user) return res.send("User not found");
-
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.send("Wrong password");
-
-  req.session.user = user;
-  res.redirect("/");
+  if (username === "admin" && password === "1234") {
+    req.session.user = username;
+    res.redirect("/");
+  } else {
+    res.send("Invalid credentials");
+  }
 });
 
 app.get("/logout", (req, res) => {
