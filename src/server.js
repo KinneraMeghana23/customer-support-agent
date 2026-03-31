@@ -28,7 +28,7 @@ app.use("/static", express.static(path.join(__dirname, "public")));
 const upload = multer({ dest: "src/uploads/" });
 
 
-// 🔐 AUTH
+// 🔐 AUTH MIDDLEWARE
 function isAuthenticated(req, res, next) {
   if (req.session.user) return next();
   res.redirect("/login");
@@ -41,7 +41,7 @@ app.get("/login", (req, res) => {
 });
 
 
-// 🌿 LOGIN LOGIC (ENV BASED)
+// 🌿 LOGIN LOGIC
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
@@ -70,7 +70,11 @@ app.get("/", isAuthenticated, (req, res) => {
 });
 
 
-// 📧 SEND
+// 📊 IN-MEMORY LOG STORAGE
+let logs = [];
+
+
+// 📧 SEND EMAIL
 app.post("/send-bulk", upload.fields([
   { name: "file" },
   { name: "attachment" }
@@ -90,6 +94,13 @@ app.post("/send-bulk", upload.fields([
       await sendEmail(email, subject, finalMessage, attachment);
     }
 
+    // 📊 Save log
+    logs.push({
+      subject,
+      count: emails.length,
+      date: new Date()
+    });
+
     res.send("✅ Emails sent successfully");
 
   } catch (err) {
@@ -99,7 +110,7 @@ app.post("/send-bulk", upload.fields([
 });
 
 
-// ⏳ SCHEDULE
+// ⏳ SCHEDULE EMAIL
 app.post("/schedule", upload.fields([
   { name: "file" },
   { name: "attachment" }
@@ -121,6 +132,16 @@ app.post("/schedule", upload.fields([
       for (let email of emails) {
         await sendEmail(email, subject, finalMessage, attachment);
       }
+
+      // 📊 Log scheduled
+      logs.push({
+        subject,
+        count: emails.length,
+        date: new Date()
+      });
+
+      console.log("⏳ Scheduled emails sent");
+
     }, delay);
 
     res.send("⏳ Scheduled successfully");
@@ -130,6 +151,24 @@ app.post("/schedule", upload.fields([
     res.status(500).send("❌ Scheduling failed");
   }
 });
+
+
+// 📊 ANALYTICS API
+app.get("/analytics", (req, res) => {
+  const totalEmails = logs.reduce((sum, l) => sum + l.count, 0);
+
+  res.json({
+    totalCampaigns: logs.length,
+    totalEmails
+  });
+});
+
+
+// 📜 HISTORY API
+app.get("/history", (req, res) => {
+  res.json(logs);
+});
+
 
 const PORT = process.env.PORT || 3000;
 
