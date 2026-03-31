@@ -22,8 +22,8 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// 🌿 STATIC
-app.use(express.static(path.join(__dirname, "public")));
+// ⚠️ FIXED STATIC (important)
+app.use("/static", express.static(path.join(__dirname, "public")));
 
 const upload = multer({ dest: "src/uploads/" });
 
@@ -41,7 +41,7 @@ app.get("/login", (req, res) => {
 });
 
 
-// 🌿 LOGIN LOGIC (simple)
+// 🌿 LOGIN LOGIC
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
@@ -49,7 +49,7 @@ app.post("/login", (req, res) => {
     req.session.user = true;
     res.redirect("/");
   } else {
-    res.send("❌ Wrong username or password");
+    res.send("❌ Invalid credentials");
   }
 });
 
@@ -61,7 +61,7 @@ app.get("/logout", (req, res) => {
 });
 
 
-// 🌿 PROTECTED DASHBOARD
+// 🌿 DASHBOARD (PROTECTED)
 app.get("/", isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -96,7 +96,7 @@ app.post("/send-bulk", upload.fields([
 });
 
 
-// ⏳ SCHEDULE
+// ⏳ SCHEDULE EMAIL
 app.post("/schedule", upload.fields([
   { name: "file" },
   { name: "attachment" }
