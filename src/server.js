@@ -104,9 +104,9 @@ app.post("/send-bulk", upload.fields([
     res.send("✅ Emails sent successfully");
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send("❌ Error sending emails");
-  }
+  console.error("FULL ERROR:", err);
+  res.status(500).send("❌ " + err.message);
+}
 });
 
 
