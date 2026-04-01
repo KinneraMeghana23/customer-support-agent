@@ -81,7 +81,17 @@ app.post("/send-bulk", upload.fields([
 ]), async (req, res) => {
 
   try {
-    const emails = extractEmails(req.files.file[0].path);
+    // ⚠️ SAFE CHECKS
+    if (!req.files || !req.files.file) {
+      return res.status(400).send("❌ Excel file missing");
+    }
+
+    const filePath = req.files.file[0].path;
+    const emails = extractEmails(filePath);
+
+    if (!emails || emails.length === 0) {
+      return res.status(400).send("❌ No emails found in file");
+    }
 
     const { subject, message, type } = req.body;
     const finalMessage = formatMessage(type, message);
@@ -104,9 +114,9 @@ app.post("/send-bulk", upload.fields([
     res.send("✅ Emails sent successfully");
 
   } catch (err) {
-  console.error("FULL ERROR:", err);
-  res.status(500).send("❌ " + err.message);
-}
+    console.error("FULL ERROR:", err);
+    res.status(500).send("❌ " + err.message);
+  }
 });
 
 
@@ -117,7 +127,12 @@ app.post("/schedule", upload.fields([
 ]), (req, res) => {
 
   try {
-    const emails = extractEmails(req.files.file[0].path);
+    if (!req.files || !req.files.file) {
+      return res.status(400).send("❌ Excel file missing");
+    }
+
+    const filePath = req.files.file[0].path;
+    const emails = extractEmails(filePath);
 
     const { subject, message, type, time } = req.body;
     const finalMessage = formatMessage(type, message);
@@ -128,12 +143,15 @@ app.post("/schedule", upload.fields([
 
     const delay = new Date(time).getTime() - Date.now();
 
+    if (delay < 0) {
+      return res.status(400).send("❌ Invalid time selected");
+    }
+
     setTimeout(async () => {
       for (let email of emails) {
         await sendEmail(email, subject, finalMessage, attachment);
       }
 
-      // 📊 Log scheduled
       logs.push({
         subject,
         count: emails.length,
@@ -147,7 +165,7 @@ app.post("/schedule", upload.fields([
     res.send("⏳ Scheduled successfully");
 
   } catch (err) {
-    console.error(err);
+    console.error("SCHEDULE ERROR:", err);
     res.status(500).send("❌ Scheduling failed");
   }
 });
